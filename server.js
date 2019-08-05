@@ -5,15 +5,16 @@ const bodyParser = require('koa-bodyparser');
 const jsonp = require('koa-jsonp');
 const logger = require('koa-logger');
 const session = require('koa-session');
+const mongoose = require('mongoose');
 const path = require('path');
 
 // 设置静态文件目录
-app.use(static(path.join(__dirname, 'public/static')));
+app.use(static(path.join(__dirname, './app/public')));
 // 配置jsonp
 app.use(jsonp());
 app.use(bodyParser());
 app.use(logger());
-// 跨域配置
+// 允许跨域
 app.use(async (ctx, next) => {
   ctx.set('Access-Control-Allow-Origin', '*');
 	ctx.set('Access-Control-Allow-Methods', '*');
@@ -38,6 +39,14 @@ app.use(session(SESSION_CONFIG, app));
 const router = require('./app/router/index.js');
 app.use(router.routes(), router.allowedMethods());
 
+
+// 连接数据库
+mongoose.connect('mongodb://127.0.0.1:27017/dva_manage', { useNewUrlParser: true });
+const db = mongoose.connection;
+
+db.on('open', () => {
+  // console.log('====数据库连接成功====');
+});
 
 app.listen(3002, () => {
   console.info('server is starting at http://localhost:3002');
