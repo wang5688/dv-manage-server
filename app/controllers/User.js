@@ -155,18 +155,39 @@ class UserController extends Base {
     }
   }
 
-  async info(ctx, next) {
-    const result = await UserModel.findOne({ account: 'admin123' });
+  async getUserInfo(ctx) {
+    const session = ctx.session;
 
-    ctx.body = {
-      code: 0,
-      data: result
-    };
+    if (!session || !session.uid) {
+      ctx.body = {
+        code: -1,
+        msg: '用户未登录',
+      };
+    } else {
+      const user = await UserModel.findOne({ user_id: session.uid });
+      if (!user) {
+        ctx.body = {
+          code: 1,
+          msg: '未获取到用户信息',
+        };
+      } else if (user.status != '0') {
+        ctx.body = {
+          code: 101,
+          msg: '账号被冻结，请联系管理员',
+        };
+      } else {
+        ctx.body = {
+          code: 0,
+          msg: '成功',
+          data: user
+        };
+      }
+    }
   }
 }
 
 const routes = new UserController();
-router.all('/info', routes.info);
+router.all('/getUserInfo', routes.getUserInfo);
 router.all('/create', routes.create);
 router.all('/login', routes.login);
 
