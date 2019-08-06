@@ -105,7 +105,7 @@ class UserController extends Base {
    * @param {String} password
    */
   login = async (ctx, next) => {
-    const params = ctx.request.method === 'GET' ? ctx.query : ctx.body;
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
     
     if (!params.account) {
       ctx.body = {
@@ -130,7 +130,7 @@ class UserController extends Base {
           code: 102,
           msg: '账号被冻结，请联系管理员',
         };
-      } else if (tools.encryption(params.password) !== user.password) {
+      } else if (params.password !== user.password) {
         ctx.body = {
           code: 1,
           msg: '密码错误',
@@ -155,6 +155,10 @@ class UserController extends Base {
     }
   }
 
+  /**
+   * 获取用户信息
+   * @return {Object}
+   */
   async getUserInfo(ctx) {
     const session = ctx.session;
 
@@ -179,9 +183,66 @@ class UserController extends Base {
         ctx.body = {
           code: 0,
           msg: '成功',
-          data: user
+          data: {
+            account: user.account,
+            ctime: user.ctime,
+            cuid: user.cuid,
+            cuser: user.cuser,
+            head_icon: user.head_icon,
+            id: user.id,
+            mtime: user.mtime,
+            muid: user.muid,
+            muser: user.muser,
+            role: user.role,
+            status: user.status,
+            user_id: user.user_id,
+            user_name: user.user_name,
+            token: user._id,
+          },
         };
       }
+    }
+  }
+
+  /**
+   * 修改信息
+   */
+  update = async (ctx) => {
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.body;
+    // uid password email mobile head_icon
+
+    const session = ctx.session;
+    const user = await UserModel.findOne({ user_id: params.uid });
+
+    if (!session || !session.uid || session.uid !== uid) {
+      ctx.body = {
+        code: -1,
+        msg: '用户未登录',
+      };
+    } else if (!user) {
+      ctx.body = {
+        code: 1,
+        msg: '账号不存在',
+      };
+    } else if (user.status != '0') {
+      ctx.body = {
+        code: 101,
+        msg: '账号被冻结，请联系管理员',
+      };
+    } else {
+      // 校验表单
+      const newData = {
+        password: tools.encryption(params.password),
+        email: params.email,
+        mobile: params.mobile,
+        head_icon: params.head_icon,
+      };
+      UserModel.findOneAndUpdate({ user_id: params.uid }, { $set: newData });
+
+      ctx.body = {
+        code: 0,
+        msg: '修改成功',
+      };
     }
   }
 }
@@ -190,5 +251,6 @@ const routes = new UserController();
 router.all('/getUserInfo', routes.getUserInfo);
 router.all('/create', routes.create);
 router.all('/login', routes.login);
+router.all('/update', routes.update);
 
 module.exports = router;

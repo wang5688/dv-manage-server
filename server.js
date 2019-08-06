@@ -1,7 +1,7 @@
 const Koa = require('koa');
 const app = new Koa();
 const static = require('koa-static');
-const bodyParser = require('koa-bodyparser');
+const koaBody = require('koa-body');
 const jsonp = require('koa-jsonp');
 const logger = require('koa-logger');
 const session = require('koa-session');
@@ -12,11 +12,22 @@ const path = require('path');
 app.use(static(path.join(__dirname, './app/public')));
 // 配置jsonp
 app.use(jsonp());
-app.use(bodyParser());
+app.use(koaBody({
+  multipart: true, // 支持文件上传
+  encoding: 'gzip',
+  formidable: {
+    uploadDir: path.join(__dirname, './app/upload'), // 设置文件上传目录
+    keepExtensions: true, // 保持文件后缀名
+    maxFieldsSize: 2 * 1024 * 1024, // 文件上传大小
+    onFileBegin: (name, file) => {
+      // 文件上传前的设置
+    }
+  }
+}));
 app.use(logger());
 // 允许跨域
 app.use(async (ctx, next) => {
-  ctx.set('Access-Control-Allow-Origin', '*');
+  ctx.set('Access-Control-Allow-Origin', 'http://localhost:8000');
 	ctx.set('Access-Control-Allow-Methods', '*');
 	ctx.set('Access-Control-Allow-Headers', '*');
 	ctx.set('Access-Control-Allow-Credentials', true);

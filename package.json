@@ -20,6 +20,7 @@
   "homepage": "https://github.com/wang5688/dva-manage-server#readme",
   "dependencies": {
     "koa": "^2.7.0",
+    "koa-body": "^4.1.0",
     "koa-bodyparser": "^4.2.1",
     "koa-jsonp": "^2.0.2",
     "koa-logger": "^3.2.1",
