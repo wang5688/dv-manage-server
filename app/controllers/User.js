@@ -156,6 +156,36 @@ class UserController extends Base {
   }
 
   /**
+   * 修改密码
+   * @param {String} account
+   * @param {String} password
+   * @memberof UserController
+   */
+  async resetPass(ctx) {
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
+    const { account, password } = params;
+    const result = {};
+    
+    if (!account) {
+      result['code'] = -1;
+      result['msg'] = '请输入账号';
+    } else if (!password) {
+      result['code'] = -1;
+      result['msg'] = '请输入密码';
+    }
+    const user = await UserModel.findOne({ account });
+    if (!user) {
+      result['code'] = 101;
+      result['msg'] = '账号不存在';
+    }
+
+    await UserModel.findOneAndUpdate({ account }, { $set: { password } });
+    result['code'] = 0;
+    result['msg'] = '修改成功';
+    ctx.body = result;
+  }
+
+  /**
    * 获取用户信息
    * @return {Object}
    */
@@ -252,5 +282,6 @@ router.all('/getUserInfo', routes.getUserInfo);
 router.all('/create', routes.create);
 router.all('/login', routes.login);
 router.all('/update', routes.update);
+router.all('/resetpass', routes.resetPass);
 
 module.exports = router;
