@@ -7,6 +7,7 @@ const logger = require('koa-logger');
 const session = require('koa-session');
 const mongoose = require('mongoose');
 const path = require('path');
+const checkLogin = require('./app/middleware/checkLogin');
 
 // 设置静态文件目录
 app.use(static(path.join(__dirname, './app/public')));
@@ -25,6 +26,7 @@ app.use(koaBody({
   }
 }));
 app.use(logger());
+app.use(checkLogin);
 // 允许跨域
 app.use(async (ctx, next) => {
   ctx.set('Access-Control-Allow-Origin', 'http://localhost:8000');

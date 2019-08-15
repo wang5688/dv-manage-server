@@ -15,6 +15,9 @@ const UserSchema = new Schema({
   email: String,
   mobile: String,
   user_name: String,
+  description: String,
+  city: String,
+  country: String,
   user_id: Number, // 用户id
   role: Number, // 账号角色 1-超管 2-管理员 3-普通账号
   id: Number,
