@@ -13,7 +13,10 @@ const UserSchema = new Schema({
     default: tools.encryption('abc123'), // 默认密码abc123
   },
   email: String,
-  mobile: String,
+  mobile: {
+    type: String,
+    default: '',
+  },
   user_name: String,
   description: String,
   city: String,
@@ -39,4 +42,3 @@ const UserSchema = new Schema({
 });
 
 module.exports = mongoose.model('User', UserSchema);
-

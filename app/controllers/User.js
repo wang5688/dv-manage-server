@@ -56,7 +56,7 @@ class UserController extends Base {
     const params = ctx.request.method === 'GET' ? ctx.query : ctx.body;
 
     const { account, password, email, mobile } = params;
-    
+
     if (!/^[0-9a-zA-Z_]{6,20}$/.test(account)) {
       ctx.body = {
         code: -1,
@@ -101,12 +101,12 @@ class UserController extends Base {
 
   /**
    * 用户登录
-   * @param {String} account 
+   * @param {String} account
    * @param {String} password
    */
   login = async (ctx, next) => {
     const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
-    
+
     if (!params.account) {
       ctx.body = {
         code: -1,
@@ -165,7 +165,7 @@ class UserController extends Base {
     const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
     const { account, password } = params;
     const result = {};
-    
+
     if (!account) {
       result['code'] = -1;
       result['msg'] = '请输入账号';
@@ -187,13 +187,14 @@ class UserController extends Base {
 
   /**
    * 修改账号信息
-   * @param {*} ctx 
+   * @param {*} ctx
    */
   async modify(ctx) {
     const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
     // 允许修改的字段
     const ACCEPT = [
       'email',
+      'mobile',
       'user_name',
       'description',
       'country',
@@ -209,10 +210,8 @@ class UserController extends Base {
     }
 
     Object.keys(params).forEach(async (key) => {
-      console.log(key)
       if (ACCEPT.indexOf(key) > -1 && params[key]) {
-        console.log(params[key])
-        await UserModel.findOneAndUpdate({ user_id: params.id }, { $set: { key: params[key] } });
+        await UserModel.findOneAndUpdate({ user_id: params.uid }, { $set: { [key]: params[key] } });
       }
     });
     ctx.body = {
@@ -227,7 +226,7 @@ class UserController extends Base {
    */
   async getUserInfo(ctx) {
     const session = ctx.session;
-    
+
     const user = ctx.userInfo;
     ctx.body = {
       code: 0,
@@ -235,6 +234,7 @@ class UserController extends Base {
       data: {
         account: user.account,
         email: user.email,
+        mobile: user.mobile,
         description: user.description,
         city: user.city,
         country: user.country,

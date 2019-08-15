@@ -10,6 +10,12 @@ const IdSchema = new Schema({
     type: Number,
     default: 1,
   },
+
+  // 菜单id
+  menuId: {
+    type: Number,
+    default: 1,
+  }
 });
 
 const Id = mongoose.model('Ids', IdSchema);
@@ -18,6 +24,7 @@ Id.findOne((err, id) => {
   if (!id) {
     const newId = new Id({
       userId: 1,
+      menuId: 1,
     });
 
     newId.save();

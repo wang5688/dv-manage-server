@@ -54,6 +54,7 @@ app.use(router.routes(), router.allowedMethods());
 
 
 // 连接数据库
+mongoose.set('useFindAndModify', false);
 mongoose.connect('mongodb://127.0.0.1:27017/dva_manage', { useNewUrlParser: true });
 const db = mongoose.connection;
 
