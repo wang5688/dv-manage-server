@@ -254,10 +254,62 @@ class UserController extends Base {
       },
     };
   }
+
+  /**
+   * 用户列表
+   * @param {String} limit 每次查询条数
+   * @param {String} page 页数
+   * @param {String} username 用户名
+   * @param {String} user_id 用户id
+   * @param {String} email 用户邮箱
+   * @param {String} mobile 用户手机号
+   */
+  userList = async (ctx) => {
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
+    const { limit = 10, page = 1, user_name = '', user_id = '', email = '', mobile = '' } = params;
+    // 查询条件
+    const offset = limit * (page - 1);
+    // const rules = [
+    //   { user_name: { $regex: user_name, $options: '$i', $exists: user_name !== '' } },
+    //   { user_id: user_id },
+    //   { email: { $regex: email, $options: '$i', $exists: email !== '' } },
+    //   { mobile: { $regex: mobile, $options: '$i', $exists: mobile !== '' } },
+    // ];
+    // const conditions = {};
+    // rules.forEach(item => {
+    //   console.log(key)
+    //   console.log(params)
+    //   if (params[key]) {
+    //     conditions.$or = [rules[key]];
+    //   }
+    // });
+    // console.log(conditions)
+    const conditions = {};
+    
+    // 返回的数据不包括的字段
+    const exclude = {
+      password: 0, // 0不包括该字段 1仅包括该字段
+      _id: 0,
+    };
+
+    // 数据总长度
+    const total = await UserModel.countDocuments(conditions);
+    const list = await UserModel.find(conditions, exclude).sort({ id: -1 }).limit(+limit).skip(+offset);
+    ctx.body = {
+      code: 0,
+      msg: 'success',
+      data: {
+        total,
+        list,
+      },
+    };
+  }
 }
 
 const routes = new UserController();
 router.all('/getUserInfo', routes.getUserInfo);
+router.all('/user_list', routes.userList);
+
 router.all('/create', routes.create);
 router.all('/login', routes.login);
 router.all('/modify', routes.modify);

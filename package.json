@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/wang5688/dva-manage-server#readme",
   "dependencies": {
+    "@hapi/joi": "^15.1.1",
     "koa": "^2.7.0",
     "koa-body": "^4.1.0",
     "koa-jsonp": "^2.0.2",

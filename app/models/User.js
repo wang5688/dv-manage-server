@@ -12,15 +12,27 @@ const UserSchema = new Schema({
     type: String,
     default: tools.encryption('abc123'), // 默认密码abc123
   },
-  email: String,
+  email: {
+    type: String,
+    default: '',
+  },
   mobile: {
     type: String,
     default: '',
   },
   user_name: String,
-  description: String,
-  city: String,
-  country: String,
+  description: {
+    type: String,
+    default: '',
+  },
+  city: {
+    type: String,
+    default: '',
+  },
+  country: {
+    type: String,
+    default: '',
+  },
   user_id: Number, // 用户id
   role: Number, // 账号角色 1-超管 2-管理员 3-普通账号
   id: Number,
@@ -33,12 +45,15 @@ const UserSchema = new Schema({
     type: String,
     default: '0', // 0启用 1冻结
   },
-  ctime: {  type: String,  default: '0000-00-00 00:00:00' },
+  ctime: {  type: Date,  default: Date.now },
   cuid: { type: Number, default: 0 },
   cuser: { type: String, default: '' },
-  mtime: {  type: String,  default: '0000-00-00 00:00:00' },
+  mtime: {  type: Date,  default: '' },
   muid: { type: Number, default: 0 },
   muser: { type: String, default: '' },
+}, {
+  versionKey: false,
+  timeStamps: { createAt: 'ctime', updateAt: 'mtime' }
 });
 
 module.exports = mongoose.model('User', UserSchema);

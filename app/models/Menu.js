@@ -36,6 +36,11 @@ const MenuSchema = new Schema({
     type: String,
     default: '',
   },
+  // 排序用
+  position: {
+    type: String,
+    default: 0,
+  },
   create_user: {
     type: Number,
     default: 0,

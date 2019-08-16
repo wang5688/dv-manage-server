@@ -6,40 +6,12 @@ const router = require('koa-router')();
 const Base = require('../common/base');
 const MenuSchema = require('../models/Menu');
 const moment = require('moment');
-
-const formatData = (data) => {
-  if (!data) return {};
-
-  const {
-    id, pid, path, guid, disabled, status, icon, params,
-    create_name, create_time, create_user,
-    update_name, update_time, update_user,
-  } = data;
-
-  return {
-    id,
-    pid,
-    path,
-    guid,
-    params,
-    disabled,
-    status,
-    icon,
-    status,
-    disabled,
-    create_name,
-    create_user,
-    create_time: moment(create_time).format('YYYY-MM-DD HH:mm:ss'),
-    update_name,
-    update_user,
-    update_time: moment(create_time).format('YYYY-MM-DD HH:mm:ss'),
-  };
-};
+const Joi = require('@hapi/joi');
 
 class Menu extends Base {
 
   list = async (ctx) => {
-    const menu = await MenuSchema.find();
+    const menu = await MenuSchema.find({}, { _id: 0, createdAt: 0, updatedAt: 0 });
     const result = {};
 
     if (!menu) {
@@ -48,53 +20,109 @@ class Menu extends Base {
     } else {
       result['code'] = 0;
       result['msg'] = 'success';
-      result['data'] = menu.map((t) => formatData(t));
+      result['data'] = menu;
     }
     ctx.body = result;
   }
 
+  /**
+   * 添加菜单
+   */
   create = async (ctx) => {
     const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
+    // 公共参数校验
+    const rules = Joi.object().keys({
+      // id: Joi.number().integer().required(),
+      pid: Joi.number().integer().min(0).default(0),
+      path: Joi.string().required(),
+      guid: Joi.string().regex(/^[a-zA-Z_]+$/).required(),
+      status: Joi.string().valid('0', '1').default('0'),
+      disabled: Joi.string().valid('0', '1').default('0'),
+      icon: Joi.string(),
+    });
+    
+    try {
+      const result = await this.validate(rules, params);
+      const menu = await MenuSchema.findOne({ guid: result.guid });
 
-    // 判断唯一标识
-    if (!params.guid) {
-      ctx.body = {
-        code: 101,
-        msg: '缺少唯一标识',
-      };
-      return;
-    } else {
-      const menu = await MenuSchema.findOne({ guid: params.guid });
       if (menu) {
         ctx.body = {
           code: 102,
-          msg: '菜单已存在，请重新提交',
+          msg: 'guid已存在',
         };
         return;
       }
-    }
 
-    const user = ctx.userInfo;
-    await MenuSchema.create({
-      id: await this.getId('menuId'),
-      pid: params.pid || 0,
-      path: params.path,
-      labe: params.label,
-      guid: params.guid,
-      icon: params.icon,
-      create_user: user.user_id,
-      create_name: user.user_name,
+      const user = ctx.userInfo;
+      // 存入数据库
+      await MenuSchema.create({
+        id: await this.getId('menuId'),
+        pid: result.pid || 0,
+        path: result.path,
+        labe: result.label,
+        guid: result.guid,
+        icon: result.icon,
+        create_user: user.user_id,
+        create_name: user.user_name,
+      });
+
+      ctx.body = {
+        code: 0,
+        msg: 'success',
+      };
+    } catch (e) {
+      console.log(e);
+      ctx.body = {
+        code: -1,
+        msg: '参数校验未通过',
+      };
+    }
+  }
+
+  /**
+   * 修改
+   */
+  update = async (ctx, next) => {
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
+
+    // 公共参数校验
+    const rules = Joi.object().keys({
+      id: Joi.number().integer().required(),
+      pid: Joi.number().integer().min(0).default(0),
+      path: Joi.string().required(),
+      status: Joi.string().valid('0', '1').default('0'),
+      disabled: Joi.string().valid('0', '1').default('0'),
+      icon: Joi.string(),
+      position: Joi.string().default('0'),
     });
 
-    ctx.body = {
-      code: 0,
-      msg: 'success',
-    };
+    try {
+      const values = await this.validate(rules, params);
+      let result = { code: -1, msg: 'failed' };
+
+      if (!await MenuSchema.find({ id: values.id })) {
+        result['msg'] = '未找到菜单';
+      } else {
+        await MenuSchema.findOneAndUpdate({ id: values.id }, {
+          $set: values,
+        });
+        result['code'] = 0;
+        result['msg'] = 'success';
+      }
+      ctx.body = result;
+    } catch (e) {
+      console.log(e);
+      ctx.body = {
+        code: -1,
+        msg: '参数校验未通过',
+      };
+    }
   }
 }
 
 const routes = new Menu();
-router.all('/add', routes.create);
+router.all('/create', routes.create);
+router.all('/update', routes.update);
 router.all('/list', routes.list);
 
 module.exports = router;
