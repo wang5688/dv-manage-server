@@ -6,18 +6,7 @@ const moment = require('moment');
 const Base = require('../common/base');
 const UserModel = require('../models/User');
 const tools = require('../utils/tools');
-
-async function checkLogin(ctx, next) {
-  if (!ctx.session.uid) {
-    ctx.body = {
-      code: -1,
-      msg: '用户未登录',
-    };
-    console.log(222)
-  } else {
-    await next();
-  }
-}
+const Joi = require('@hapi/joi');
 
 class UserController extends Base {
   constructor() {
@@ -211,7 +200,14 @@ class UserController extends Base {
 
     Object.keys(params).forEach(async (key) => {
       if (ACCEPT.indexOf(key) > -1 && params[key]) {
-        await UserModel.findOneAndUpdate({ user_id: params.uid }, { $set: { [key]: params[key] } });
+        await UserModel.findOneAndUpdate({ user_id: params.uid }, {
+          $set: {
+            [key]: params[key],
+            muid: ctx.session.uid,
+            muser: ctx.userInfo.user_name,
+            mtime: moment(),
+          },
+        });
       }
     });
     ctx.body = {
@@ -221,37 +217,67 @@ class UserController extends Base {
   }
 
   /**
+   * 冻结、解冻账号
+   * @param {Number} uid
+   * @param {Number} status
+   */
+  frozen = async (ctx) => {
+    const params = ctx.request.method === 'GET' ? ctx.query : ctx.request.body;
+
+    // 参数校验
+    const valid = Joi.object().keys({
+      uid: Joi.number().required(),
+      status: Joi.string().valid('0', '1').required(),
+    });
+    
+    try {
+      const result = {};
+      const values = await this.validate(valid, params);
+      // 判断当前账号是否为超管账号
+      if (ctx.userInfo.role != 1) {
+        result['code'] = 101;
+        result['msg'] = '该账号没有相关操作权限';
+      } else if (!await UserModel.findOne({ user_id: values.uid })) {
+        result['code'] = 102;
+        result['msg'] = '账号不存在';
+      } else {
+        await UserModel.findOneAndUpdate({ user_id: values.uid }, {
+          $set: {
+            status: values.status,
+            mtime: moment().format('YYYY-MM-DD HH:mm:ss'),
+            muid: ctx.session.uid,
+            muser: ctx.userInfo.user_name,
+          },
+        });
+        result['code'] = 0;
+        result['msg'] = '成功';
+      }
+      ctx.body = result;
+    } catch (e) {
+      console.log(e);
+      ctx.body = {
+        code: -1,
+        msg: '参数校验未通过',
+      };
+    }
+  }
+
+  /**
    * 获取用户信息
    * @return {Object}
    */
   async getUserInfo(ctx) {
     const session = ctx.session;
+    const user = await UserModel.findOne({ user_id: session.uid }, {
+      password: 0,
+      __v: 0,
+      _id: 0,
+    });
 
-    const user = ctx.userInfo;
     ctx.body = {
       code: 0,
       msg: '成功',
-      data: {
-        account: user.account,
-        email: user.email,
-        mobile: user.mobile,
-        description: user.description,
-        city: user.city,
-        country: user.country,
-        ctime: user.ctime,
-        cuid: user.cuid,
-        cuser: user.cuser,
-        head_icon: user.head_icon,
-        id: user.id,
-        mtime: user.mtime,
-        muid: user.muid,
-        muser: user.muser,
-        role: user.role,
-        status: user.status,
-        user_id: user.user_id,
-        user_name: user.user_name,
-        token: user._id,
-      },
+      data: user,
     };
   }
 
@@ -269,22 +295,19 @@ class UserController extends Base {
     const { limit = 10, page = 1, user_name = '', user_id = '', email = '', mobile = '' } = params;
     // 查询条件
     const offset = limit * (page - 1);
-    // const rules = [
-    //   { user_name: { $regex: user_name, $options: '$i', $exists: user_name !== '' } },
-    //   { user_id: user_id },
-    //   { email: { $regex: email, $options: '$i', $exists: email !== '' } },
-    //   { mobile: { $regex: mobile, $options: '$i', $exists: mobile !== '' } },
-    // ];
-    // const conditions = {};
-    // rules.forEach(item => {
-    //   console.log(key)
-    //   console.log(params)
-    //   if (params[key]) {
-    //     conditions.$or = [rules[key]];
-    //   }
-    // });
-    // console.log(conditions)
     const conditions = {};
+    if (user_id) {
+      conditions['user_id'] = user_id;
+    }
+    if (user_name) {
+      conditions['$or'] = [{ user_name: { $regex: user_name } }];
+    }
+    if (email) {
+      conditions['$or'] = [{ email: { $regex: email } }];
+    }
+    if (mobile) {
+      conditions['$or'] = [{ mobile: { $regex: mobile } }];
+    }
     
     // 返回的数据不包括的字段
     const exclude = {
@@ -304,6 +327,13 @@ class UserController extends Base {
       },
     };
   }
+
+  /**
+   * 用户权限管理
+   */
+  permission = async (ctx) => {
+
+  }
 }
 
 const routes = new UserController();
@@ -314,5 +344,7 @@ router.all('/create', routes.create);
 router.all('/login', routes.login);
 router.all('/modify', routes.modify);
 router.all('/resetpass', routes.resetPass);
+
+router.all('/frozen', routes.frozen);
 
 module.exports = router;

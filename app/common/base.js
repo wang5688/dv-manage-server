@@ -2,7 +2,7 @@ const IdModel = require('../models/Ids');
 
 class Base {
   constructor() {
-    this.idList = ['userId', 'menuId']; // id类型 用于id的自增
+    this.idList = ['userId', 'menuId', 'noticeId']; // id类型 用于id的自增
   }
 
   /**

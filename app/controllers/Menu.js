@@ -4,14 +4,17 @@
  */
 const router = require('koa-router')();
 const Base = require('../common/base');
-const MenuSchema = require('../models/Menu');
+const MenuModel = require('../models/Menu');
 const moment = require('moment');
 const Joi = require('@hapi/joi');
 
 class Menu extends Base {
 
+  /**
+   * 菜单列表
+   */
   list = async (ctx) => {
-    const menu = await MenuSchema.find({}, { _id: 0, createdAt: 0, updatedAt: 0 });
+    const menu = await MenuModel.find({}, { _id: 0, createdAt: 0, updatedAt: 0 });
     const result = {};
 
     if (!menu) {
@@ -43,7 +46,7 @@ class Menu extends Base {
     
     try {
       const result = await this.validate(rules, params);
-      const menu = await MenuSchema.findOne({ guid: result.guid });
+      const menu = await MenuModel.findOne({ guid: result.guid });
 
       if (menu) {
         ctx.body = {
@@ -55,7 +58,7 @@ class Menu extends Base {
 
       const user = ctx.userInfo;
       // 存入数据库
-      await MenuSchema.create({
+      await MenuModel.create({
         id: await this.getId('menuId'),
         pid: result.pid || 0,
         path: result.path,
@@ -100,11 +103,14 @@ class Menu extends Base {
       const values = await this.validate(rules, params);
       let result = { code: -1, msg: 'failed' };
 
-      if (!await MenuSchema.find({ id: values.id })) {
+      if (!await MenuModel.find({ id: values.id })) {
         result['msg'] = '未找到菜单';
       } else {
-        await MenuSchema.findOneAndUpdate({ id: values.id }, {
+        await MenuModel.findOneAndUpdate({ id: values.id }, {
           $set: values,
+          update_user: ctx.session.uid,
+          update_name: ctx.userInfo.user_name,
+          update_time: moment(),
         });
         result['code'] = 0;
         result['msg'] = 'success';

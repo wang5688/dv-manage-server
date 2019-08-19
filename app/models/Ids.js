@@ -15,6 +15,11 @@ const IdSchema = new Schema({
   menuId: {
     type: Number,
     default: 1,
+  },
+
+  noticeId: {
+    type: Number,
+    default: 1,
   }
 });
 
@@ -25,6 +30,7 @@ Id.findOne((err, id) => {
     const newId = new Id({
       userId: 1,
       menuId: 1,
+      noticeId: 1,
     });
 
     newId.save();

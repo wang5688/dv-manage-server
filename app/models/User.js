@@ -51,6 +51,8 @@ const UserSchema = new Schema({
   mtime: {  type: Date,  default: '' },
   muid: { type: Number, default: 0 },
   muser: { type: String, default: '' },
+  // notice: [{ type: Schema.types.ObjectId, ref: 'Notice' }], // 通知消息
+  // coments: [{}], // 评论消息
 }, {
   versionKey: false,
   timeStamps: { createAt: 'ctime', updateAt: 'mtime' }
